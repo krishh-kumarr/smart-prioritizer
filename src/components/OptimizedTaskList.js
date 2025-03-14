@@ -8,6 +8,7 @@ const OptimizedTaskList = ({ tasks, timeLimit, onToggleComplete, onDelete, darkM
   const [remainingTime, setRemainingTime] = useState(0);
   const [isCalculating, setIsCalculating] = useState(false);
   const [showAlgorithmInfo, setShowAlgorithmInfo] = useState(false);
+  const [exceedsTimeLimit, setExceedsTimeLimit] = useState(false);
 
   useEffect(() => {
     // Show a brief "calculating" state for better UX
@@ -21,9 +22,18 @@ const OptimizedTaskList = ({ tasks, timeLimit, onToggleComplete, onDelete, darkM
         setOptimizedTasks([]);
         setTotalValue(0);
         setRemainingTime(timeLimit);
+        setExceedsTimeLimit(false);
         setIsCalculating(false);
         return;
       }
+      
+      // Get most important task for fallback
+      const mostImportantTask = [...incompleteTasks].sort((a, b) => {
+        if (b.importance === a.importance) {
+          return a.time - b.time; // If equal importance, prefer shorter task
+        }
+        return b.importance - a.importance;
+      })[0];
       
       // Run knapsack algorithm
       const { selectedTasks, totalValue, remainingTime } = knapsackOptimization(
@@ -31,9 +41,19 @@ const OptimizedTaskList = ({ tasks, timeLimit, onToggleComplete, onDelete, darkM
         timeLimit
       );
       
-      setOptimizedTasks(selectedTasks);
-      setTotalValue(totalValue);
-      setRemainingTime(remainingTime);
+      // Always suggest at least one task
+      if (selectedTasks.length === 0 && incompleteTasks.length > 0) {
+        setOptimizedTasks([mostImportantTask]);
+        setTotalValue(mostImportantTask.importance);
+        setRemainingTime(timeLimit - mostImportantTask.time);
+        setExceedsTimeLimit(mostImportantTask.time > timeLimit);
+      } else {
+        setOptimizedTasks(selectedTasks);
+        setTotalValue(totalValue);
+        setRemainingTime(remainingTime);
+        setExceedsTimeLimit(remainingTime < 0);
+      }
+      
       setIsCalculating(false);
     }, 400);
     
@@ -42,16 +62,24 @@ const OptimizedTaskList = ({ tasks, timeLimit, onToggleComplete, onDelete, darkM
 
   // Format time (convert minutes back to hours and minutes)
   const formatTime = (timeInMinutes) => {
-    const hours = Math.floor(timeInMinutes / 60);
-    const minutes = timeInMinutes % 60;
+    const minutes = Math.abs(timeInMinutes); // Handle negative values
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
     
     if (hours === 0) {
-      return `${minutes}m`;
-    } else if (minutes === 0) {
+      return `${mins}m`;
+    } else if (mins === 0) {
       return `${hours}h`;
     } else {
-      return `${hours}h ${minutes}m`;
+      return `${hours}h ${mins}m`;
     }
+  };
+
+  // Calculate actual time utilization percentage, capped at 100%
+  const getTimeUtilization = () => {
+    if (timeLimit <= 0) return 100;
+    const utilization = ((timeLimit - remainingTime) / timeLimit) * 100;
+    return Math.min(Math.max(0, Math.round(utilization)), 100);
   };
 
   return (
@@ -94,6 +122,22 @@ const OptimizedTaskList = ({ tasks, timeLimit, onToggleComplete, onDelete, darkM
           </div>
         </div>
         
+        {/* Warning banner when exceeding time limit */}
+        {exceedsTimeLimit && (
+          <div className={`mb-5 p-3 rounded-md flex items-start ${
+            darkMode ? 'bg-yellow-900/30 border border-yellow-800/30' : 'bg-yellow-50 border border-yellow-200'
+          }`}>
+            <svg className={`w-5 h-5 mr-2 flex-shrink-0 ${darkMode ? 'text-yellow-400' : 'text-yellow-600'}`} 
+                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" 
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <span className={`text-sm ${darkMode ? 'text-yellow-300' : 'text-yellow-800'}`}>
+              This task exceeds your available time but is recommended as your highest priority.
+            </span>
+          </div>
+        )}
+        
         {/* Summary stats */}
         <div className={`grid grid-cols-2 gap-3 mb-5 ${isCalculating ? 'opacity-50' : ''}`}>
           <div className={`p-3 rounded-md ${
@@ -120,8 +164,12 @@ const OptimizedTaskList = ({ tasks, timeLimit, onToggleComplete, onDelete, darkM
           <div className={`p-3 rounded-md ${
             darkMode ? 'bg-gray-700/50' : 'bg-gray-50'
           }`}>
-            <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Time Remaining</div>
-            <div className="text-lg font-bold">{formatTime(remainingTime)}</div>
+            <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+              {exceedsTimeLimit ? 'Time Exceeded' : 'Time Remaining'}
+            </div>
+            <div className={`text-lg font-bold ${exceedsTimeLimit ? (darkMode ? 'text-red-400' : 'text-red-500') : ''}`}>
+              {exceedsTimeLimit ? `+${formatTime(-remainingTime)}` : formatTime(remainingTime)}
+            </div>
           </div>
         </div>
         
@@ -129,12 +177,14 @@ const OptimizedTaskList = ({ tasks, timeLimit, onToggleComplete, onDelete, darkM
         <div className="mb-5">
           <div className={`flex justify-between text-xs mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
             <span>Time Utilization</span>
-            <span>{Math.round(((timeLimit - remainingTime) / timeLimit) * 100)}%</span>
+            <span>{exceedsTimeLimit ? '> 100%' : `${getTimeUtilization()}%`}</span>
           </div>
           <div className={`h-2 w-full rounded-full overflow-hidden ${darkMode ? 'bg-gray-700' : 'bg-gray-200'}`}>
             <div 
-              className="h-full bg-indigo-600 transition-all duration-500 ease-out"
-              style={{ width: `${((timeLimit - remainingTime) / timeLimit) * 100}%` }}
+              className={`h-full transition-all duration-500 ease-out ${exceedsTimeLimit ? 
+                (darkMode ? 'bg-red-500' : 'bg-red-500') : 
+                'bg-indigo-600'}`}
+              style={{ width: `${getTimeUtilization()}%` }}
             ></div>
           </div>
         </div>
@@ -153,9 +203,7 @@ const OptimizedTaskList = ({ tasks, timeLimit, onToggleComplete, onDelete, darkM
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
             </svg>
             <p className={`text-center ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-              {tasks.length === 0 
-                ? "Add tasks to generate an optimized plan" 
-                : "No tasks fit within your time budget"}
+              Add tasks to generate an optimized plan
             </p>
           </div>
         ) : (
