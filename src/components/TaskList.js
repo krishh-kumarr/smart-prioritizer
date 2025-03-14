@@ -1,4 +1,3 @@
-// src/components/TaskList.js
 import React from 'react';
 import TaskItem from './TaskItem';
 const TaskList = ({ tasks, onToggleComplete, onDelete, title = "All Tasks" }) => {
