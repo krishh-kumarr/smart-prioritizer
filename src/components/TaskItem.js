@@ -2,12 +2,12 @@ import React, { useState } from 'react';
 
 const TaskItem = ({ task, onToggleComplete, onDelete, darkMode }) => {
   const [isHovering, setIsHovering] = useState(false);
-  
+
   // Format time (convert minutes back to hours and minutes)
   const formatTime = (timeInMinutes) => {
     const hours = Math.floor(timeInMinutes / 60);
     const minutes = timeInMinutes % 60;
-    
+
     if (hours === 0) {
       return `${minutes}m`;
     } else if (minutes === 0) {
@@ -24,20 +24,20 @@ const TaskItem = ({ task, onToggleComplete, onDelete, darkMode }) => {
         ? 'border-gray-700 bg-gray-800/50' 
         : 'border-gray-200 bg-gray-50';
     }
-    
+
     if (importance >= 8) {
       return darkMode 
-        ? 'border-red-900/50 bg-red-900/10' 
-        : 'border-red-200 bg-red-50';
+        ? 'border-red-800 bg-red-900/20 text-red-400' 
+        : 'border-red-300 bg-red-100 text-red-700';
     }
     if (importance >= 5) {
       return darkMode 
-        ? 'border-yellow-900/50 bg-yellow-900/10' 
-        : 'border-yellow-200 bg-yellow-50';
+        ? 'border-yellow-700 bg-yellow-900/20 text-yellow-400' 
+        : 'border-yellow-300 bg-yellow-100 text-yellow-700';
     }
     return darkMode 
-      ? 'border-green-900/50 bg-green-900/10' 
-      : 'border-green-200 bg-green-50';
+      ? 'border-green-700 bg-green-900/20 text-green-400' 
+      : 'border-green-300 bg-green-100 text-green-700';
   };
 
   // Get color for importance indicator
@@ -45,7 +45,7 @@ const TaskItem = ({ task, onToggleComplete, onDelete, darkMode }) => {
     if (task.completed) {
       return darkMode ? 'bg-gray-600' : 'bg-gray-300';
     }
-    
+
     if (importance >= 8) return 'bg-red-500';
     if (importance >= 5) return 'bg-yellow-500';
     return 'bg-green-500';
@@ -63,7 +63,7 @@ const TaskItem = ({ task, onToggleComplete, onDelete, darkMode }) => {
       <div 
         className={`absolute left-0 top-0 bottom-0 w-1 rounded-l-lg ${getImportanceColor(task.importance)}`}
       ></div>
-      
+
       <div className="flex items-start">
         <div 
           className={`mt-1 mr-3 flex-shrink-0 h-5 w-5 rounded border ${
@@ -79,10 +79,12 @@ const TaskItem = ({ task, onToggleComplete, onDelete, darkMode }) => {
             </svg>
           )}
         </div>
-        
+
         <div className={`flex-grow ${task.completed ? 'opacity-60' : ''}`}>
-          <h3 className={`text-base font-medium ${task.completed ? 'line-through' : ''}`}>{task.name}</h3>
-          
+          <h3 className={`text-base font-semibold ${task.completed ? 'line-through text-gray-500' : darkMode ? 'text-white' : 'text-black'}`}>
+            {task.name}
+          </h3>
+
           <div className="flex flex-wrap items-center mt-2 gap-3">
             <div className={`flex items-center ${darkMode ? 'text-gray-400' : 'text-gray-500'} text-xs`}>
               <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
@@ -90,7 +92,7 @@ const TaskItem = ({ task, onToggleComplete, onDelete, darkMode }) => {
               </svg>
               {formatTime(task.time)}
             </div>
-            
+
             <div className={`flex items-center ${darkMode ? 'text-gray-400' : 'text-gray-500'} text-xs`}>
               <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
@@ -99,7 +101,7 @@ const TaskItem = ({ task, onToggleComplete, onDelete, darkMode }) => {
             </div>
           </div>
         </div>
-        
+
         <button
           onClick={() => onDelete(task.id)}
           className={`ml-2 p-1 rounded-full transition-opacity duration-200 ${
