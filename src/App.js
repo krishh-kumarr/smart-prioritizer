@@ -643,7 +643,7 @@ function AppContent() {
               <path d="M8 18V20H10V18H8Z" fill="currentColor" />
               <path fillRule="evenodd" clipRule="evenodd" d="M2 2H22V22H2V2ZM4 4H20V20H4V4Z" fill="currentColor" />
             </svg>
-            <h1 className="text-xl md:text-2xl font-bold">TaskOptimize</h1>
+            <h1 className="text-xl md:text-2xl font-bold">TaskOptimizer</h1>
           </div>
           
           <div className="flex items-center space-x-4">
@@ -957,6 +957,11 @@ function AppContent() {
           darkMode={darkMode}
         />
       )}
+      <footer className={`mt-12 py-6 text-center ${darkMode ? 'text-gray-400' : 'text-gray-500'} text-sm`}>
+        <p>TaskOptimize - Using Knapsack Algorithm & Merge Sort</p>
+        <p className="mt-1">Made with ❤️ for efficient productivity by team AndroNova</p>
+      </footer>
+
     </div>
   );
 }
